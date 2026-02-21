@@ -8,7 +8,11 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://petroliumDb:FlBgQ7b2SaAmBZtv@cluster0.co3ydzz.mongodb.net/?appName=Cluster0";
 
 
-app.use(cors())
+app.use(cors({
+    origin: '*', // আপাতত সব ডোমেইন এলাও করার জন্য
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json())
 
 
@@ -33,14 +37,33 @@ async function run() {
 
     // ১. লরীর কাজ (Maintenance/Work) সেভ করার API
 app.post('/save-lory-work', async (req, res) => {
-  const workData = req.body; // এতে থাকবে { lorryNo, date, workDetails, cost, driverName }
-  try {
-    const result = await loryWorkCollection.insertOne(workData);
-    res.send(result);
-  } catch (error) {
-    res.status(500).send({ message: "ডাটা সেভ করতে সমস্যা হয়েছে", error });
-  }
+    try {
+        const workData = req.body;
+        // ডাটাবেজে ইনসার্ট করার আগে নিশ্চিত হয়ে নিন workData খালি না
+        if (!workData.lorryNo) {
+            return res.status(400).send({ message: "লরী নম্বর প্রয়োজন" });
+        }
+
+        const result = await loryWorkCollection.insertOne(workData);
+        res.status(201).send(result); 
+    } catch (error) {
+        console.error("MongoDB Error:", error);
+        res.status(500).send({ message: "সার্ভারে সমস্যা", error: error.message });
+    }
 });
+
+
+// সব লরীর কাজের তালিকা পাওয়ার API
+app.get('/all-lory-works', async (req, res) => {
+    try {
+        // নতুন ডাটাগুলো আগে দেখানোর জন্য sort({ _id: -1 }) ব্যবহার করা হয়েছে
+        const result = await loryWorkCollection.find().sort({ _id: -1 }).toArray();
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "ডাটা আনতে সমস্যা হয়েছে", error });
+    }
+});
+
 
 // ২. নির্দিষ্ট লরীর সব কাজের হিস্টোরি দেখার API
 app.get('/lory-work/:lorryNo', async (req, res) => {
