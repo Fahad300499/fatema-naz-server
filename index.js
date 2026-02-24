@@ -14,6 +14,7 @@ app.use(cors({
     'https://endearing-treacle-d5fec1.netlify.app/',
     'https://fatema-naz-server.vercel.app' // আপনার লাইভ সাইট লিংক
   ],
+  methods:["GET","POST","PUT","DELETE"],
   credentials: true
 }));
 app.use(express.json())
