@@ -9,9 +9,12 @@ const uri = "mongodb+srv://petroliumDb:FlBgQ7b2SaAmBZtv@cluster0.co3ydzz.mongodb
 
 
 app.use(cors({
-    origin: '*', // আপাতত সব ডোমেইন এলাও করার জন্য
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+  origin: [
+    'http://localhost:5174', // আপনার লোকাল হোস্ট পোর্ট
+    'https://endearing-treacle-d5fec1.netlify.app/',
+    'https://fatema-naz-server.vercel.app' // আপনার লাইভ সাইট লিংক
+  ],
+  credentials: true
 }));
 app.use(express.json())
 
@@ -23,16 +26,64 @@ const client = new MongoClient(uri, {
     strict: true,
     deprecationErrors: true,
   }
+
 });
+
+
+
+
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
     const petroliumDB = client.db("petroliumDB");
+    const usersCollection = petroliumDB.collection("users");
     const tripsCollection = petroliumDB.collection("trips");
     const chalansCollection = petroliumDB.collection("chalans");
     const loryWorkCollection = petroliumDB.collection("loryWork");
+
+
+   // ইউজার সেভ এবং রোল সেট করার API (Upsert logic)
+app.put('/users', async (req, res) => {
+    await connectDB(); // রিকোয়েস্ট আসার পর কানেকশন নিশ্চিত করা
+    const user = req.body;
+    const filter = { email: user.email };
+    const options = { upsert: true }; 
+    
+    // প্রথমে ইউজার আছে কি না চেক করি
+    const existingUser = await usersCollection.findOne(filter);
+    
+    const updateDoc = {
+        $set: {
+            name: user.name,
+            email: user.email,
+            photo: user.photo,
+        },
+    };
+
+    // যদি ইউজার নতুন হয় (অর্থাৎ ডাটাবেজে নেই), তবেই রোল 'user' সেট হবে। 
+    // যদি আগে থেকেই থাকে (যেমন আপনি মঙ্গোডিবি থেকে 'admin' করে দিয়েছেন), তবে রোল আর পরিবর্তন হবে না।
+    if (!existingUser) {
+        updateDoc.$set.role = 'user';
+    }
+
+    try {
+        const result = await usersCollection.updateOne(filter, updateDoc, options);
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "Database error", error });
+    }
+});
+
+
+// ইউজারের রোল চেক করার API
+app.get('/user/role/:email', async (req, res) => {
+    const email = req.params.email;
+    const user = await usersCollection.findOne({ email: email });
+    res.send({ role: user?.role || 'user' });
+});
 
 
     // ১. লরীর কাজ (Maintenance/Work) সেভ করার API
@@ -168,6 +219,14 @@ app.get('/chalans/:date', async (req, res) => {
   }
 }
 run().catch(console.dir);
+
+let dbConnected = false;
+async function connectDB() {
+    if (dbConnected) return;
+    await client.connect();
+    dbConnected = true;
+    console.log("Connected to MongoDB");
+}
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
