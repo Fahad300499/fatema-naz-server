@@ -10,6 +10,7 @@ const uri = "mongodb+srv://petroliumDb:FlBgQ7b2SaAmBZtv@cluster0.co3ydzz.mongodb
 
 app.use(cors({
   origin: [
+    'http://localhost:5173',
     'http://localhost:5174', // আপনার লোকাল হোস্ট পোর্ট
     'https://endearing-treacle-d5fec1.netlify.app/',
     'https://fatema-naz-server.vercel.app' // আপনার লাইভ সাইট লিংক
