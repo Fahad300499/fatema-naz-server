@@ -5,17 +5,11 @@ const cors = require('cors')
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
-const uri = "mongodb+srv://petroliumDb:FlBgQ7b2SaAmBZtv@cluster0.co3ydzz.mongodb.net/?appName=Cluster0";
-
+const uri = "mongodb+srv://petroliumDb:FlBgQ7b2SaAmBZtv@cluster0.co3ydzz.mongodb.net/petroliumDB?retryWrites=true&w=majority";
 
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174', // আপনার লোকাল হোস্ট পোর্ট
-    'https://endearing-treacle-d5fec1.netlify.app/',
-    'https://fatema-naz-server.vercel.app' // আপনার লাইভ সাইট লিংক
-  ],
-  methods:["GET","POST","PUT","DELETE"],
+  origin: '*', // এটি দিলে সব ডোমেইন থেকে এক্সেস পাওয়া যাবে
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 app.use(express.json())
