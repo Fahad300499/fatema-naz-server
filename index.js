@@ -3,6 +3,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 const cors = require('cors');
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const cron = require('node-cron');
+const axios = require('axios');
 
 // ১. CORS কনফিগারেশন
 app.use(cors({
@@ -41,8 +43,11 @@ async function run() {
         const tripsCollection = petroliumDB.collection("trips");
         const chalansCollection = petroliumDB.collection("chalans");
         const loryWorkCollection = petroliumDB.collection("loryWork");
+        // ১. লরীর ডকুমেন্ট কালেকশন ডিক্লেয়ার করুন
 
-        // --- API সমূহ এখানে থাকবে (আপনার আগের কোড অনুযায়ী) ---
+      
+
+    
         
         // উদাহরণ: ইউজার API (connectDB সরিয়ে দেওয়া হয়েছে কারণ কানেকশন উপরেই হয়েছে)
         app.put('/users', async (req, res) => {
