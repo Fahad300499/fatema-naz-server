@@ -7,10 +7,20 @@ const cron = require('node-cron');
 const axios = require('axios');
 
 // ১. CORS কনফিগারেশন
+// app.use(cors({
+//     origin: '*', // প্রোডাকশনে আপনার ফ্রন্টএন্ড লিঙ্ক দিন
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//     credentials: true
+// }));
+
 app.use(cors({
-    origin: '*', // প্রোডাকশনে আপনার ফ্রন্টএন্ড লিঙ্ক দিন
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
+  origin: [
+    "http://localhost:5173",
+    "https://www.ashrafulenterprise.com",
+    "https://ashrafulenterprise.com",
+    "https://admin.ashrafulenterprise.com"
+  ],
+  credentials: true
 }));
 
 app.use(express.json());
