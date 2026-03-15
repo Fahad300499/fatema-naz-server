@@ -45,8 +45,6 @@ async function run() {
         const loryWorkCollection = petroliumDB.collection("loryWork");
         // ১. লরীর ডকুমেন্ট কালেকশন ডিক্লেয়ার করুন
 
-      
-
     
         
         // উদাহরণ: ইউজার API (connectDB সরিয়ে দেওয়া হয়েছে কারণ কানেকশন উপরেই হয়েছে)
@@ -71,8 +69,7 @@ async function run() {
             res.send(result);
         });
 
-        // বাকি সব API...
-        
+        // বাকি সব API...      
 
 
 // ইউজারের রোল চেক করার API
@@ -124,7 +121,6 @@ async function run() {
             }
         });
 
-
         // ১. ডাটা সেভ করার জন্য POST API
         app.post('/save-trips', async (req, res) => {
             const data = req.body;
@@ -168,7 +164,6 @@ async function run() {
             }
         });
 
-
         // ১. নতুন চালান সেভ বা আপডেট করার API
         app.post('/chalans', async (req, res) => {
             const { date, companyName, entries } = req.body;
@@ -206,7 +201,6 @@ async function run() {
             }
         });
 
-
         // Ping Check
         await client.db("admin").command({ ping: 1 });
     } catch (error) {
@@ -223,11 +217,6 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
-
-
-
-// petroliumDb
-// FlBgQ7b2SaAmBZtv
 
 
 
