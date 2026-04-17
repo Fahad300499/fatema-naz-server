@@ -15,7 +15,8 @@ const axios = require('axios');
 
 app.use(cors({
   origin: [
-    "*"
+    "https://classy-squirrel-e10e57.netlify.app/",
+
     // "http://localhost:5173",
     // "http://localhost:5174",
     // "https://www.ashrafulenterprise.com",
