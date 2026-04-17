@@ -15,13 +15,14 @@ const axios = require('axios');
 
 app.use(cors({
   origin: [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://www.ashrafulenterprise.com",
-    "https://ashrafulenterprise.com",
-    "https://admin.ashrafulenterprise.com",
-    "https://fatema-naz-client-m6nl.vercel.app",
-    "https://fatema-naz-client-m৭nl.vercel.app"
+    "*"
+    // "http://localhost:5173",
+    // "http://localhost:5174",
+    // "https://www.ashrafulenterprise.com",
+    // "https://ashrafulenterprise.com",
+    // "https://admin.ashrafulenterprise.com",
+    // "https://fatema-naz-client-m6nl.vercel.app",
+    // "https://fatema-naz-client-m7nl.vercel.app"
   ],
   credentials: true
 }));
