@@ -19,7 +19,9 @@ app.use(cors({
     "http://localhost:5174",
     "https://www.ashrafulenterprise.com",
     "https://ashrafulenterprise.com",
-    "https://admin.ashrafulenterprise.com"
+    "https://admin.ashrafulenterprise.com",
+    "https://fatema-naz-client-m6nl.vercel.app",
+    "https://fatema-naz-client-m৭nl.vercel.app"
   ],
   credentials: true
 }));
