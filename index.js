@@ -81,6 +81,92 @@ async function run() {
 
 
 
+
+
+
+
+
+        // --- ১. সব গাড়ির লিস্ট নিয়ে আসার API (Diba) ---
+app.get('/all-lories-diba', async (req, res) => {
+    try {
+        // শুধু loryNumber ফিল্ডটি প্রোজেকশন করে নিয়ে আসা হচ্ছে
+        const result = await loryDetailsDibaCollection.find({}, { projection: { loryNumber: 1, _id: 0 } }).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error("Error fetching lories:", error);
+        res.status(500).send({ message: "গাড়ির তালিকা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+// --- ২. নতুন গাড়ি যুক্ত করার API (Diba) ---
+app.post('/add-lory-diba', async (req, res) => {
+    try {
+        const { loryNumber } = req.body;
+        
+        if (!loryNumber) {
+            return res.status(400).send({ success: false, message: "গাড়ির নম্বর প্রয়োজন" });
+        }
+
+        // চেক করা হচ্ছে গাড়িটি আগে থেকেই আছে কিনা
+        const exists = await loryDetailsDibaCollection.findOne({ loryNumber });
+        if (exists) {
+            return res.status(400).send({ success: false, message: "এই গাড়িটি আগেই যুক্ত করা হয়েছে" });
+        }
+
+        const newLory = {
+            loryNumber,
+            taxToken: '',
+            fitness: '',
+            routePermit: '',
+            registration: '',
+            calibration: '',
+            exclusive: '',
+            createdAt: new Date()
+        };
+
+        const result = await loryDetailsDibaCollection.insertOne(newLory);
+        if (result.insertedId) {
+            res.send({ success: true, message: "গাড়িটি সফলভাবে যুক্ত হয়েছে" });
+        }
+    } catch (error) {
+        console.error("Error adding lory:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+// ৪. নির্দিষ্ট গাড়ি ডিলিট করার API (Diba)
+app.delete('/delete-lory-diba/:number', async (req, res) => {
+    try {
+        const loryNumber = req.params.number;
+        const query = { loryNumber: loryNumber };
+        
+        const result = await loryDetailsDibaCollection.deleteOne(query);
+        
+        if (result.deletedCount === 1) {
+            res.send({ success: true, message: "গাড়িটি সফলভাবে ডিলিট হয়েছে" });
+        } else {
+            res.status(404).send({ success: false, message: "গাড়িটি পাওয়া যায়নি" });
+        }
+    } catch (error) {
+        console.error("Lory Delete Error:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
 // ২. ডিলিট রাউটটি এভাবে আপডেট করুন
 app.delete('/delete-lory-work/:id', async (req, res) => {
     try {
