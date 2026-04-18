@@ -6,12 +6,6 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cron = require('node-cron');
 const axios = require('axios');
 
-// ১. CORS কনফিগারেশন
-// app.use(cors({
-//     origin: '*', // প্রোডাকশনে আপনার ফ্রন্টএন্ড লিঙ্ক দিন
-//     methods: ["GET", "POST", "PUT", "DELETE"],
-//     credentials: true
-// }));
 
 app.use(cors({
   origin: [
@@ -78,6 +72,244 @@ async function run() {
         const loryDetailsDibaCollection = petroliumDB.collection("loryDetailsDiba");
 
         const settingsCollection = petroliumDB.collection("settings");
+
+
+
+
+
+
+             app.get('/all-lories', async (req, res) => {
+    try {
+        // শুধু loryNumber ফিল্ডটি প্রোজেকশন করে নিয়ে আসা হচ্ছে
+        const result = await loryDetailsCollection.find({}, { projection: { loryNumber: 1, _id: 0 } }).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error("Error fetching lories:", error);
+        res.status(500).send({ message: "গাড়ির তালিকা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+// --- ২. নতুন গাড়ি যুক্ত করার API (Diba) ---
+app.post('/add-lory', async (req, res) => {
+    try {
+        const { loryNumber } = req.body;
+        
+        if (!loryNumber) {
+            return res.status(400).send({ success: false, message: "গাড়ির নম্বর প্রয়োজন" });
+        }
+
+        // চেক করা হচ্ছে গাড়িটি আগে থেকেই আছে কিনা
+        const exists = await loryDetailsCollection.findOne({ loryNumber });
+        if (exists) {
+            return res.status(400).send({ success: false, message: "এই গাড়িটি আগেই যুক্ত করা হয়েছে" });
+        }
+
+        const newLory = {
+            loryNumber,
+            taxToken: '',
+            fitness: '',
+            routePermit: '',
+            registration: '',
+            calibration: '',
+            exclusive: '',
+            createdAt: new Date()
+        };
+
+        const result = await loryDetailsCollection.insertOne(newLory);
+        if (result.insertedId) {
+            res.send({ success: true, message: "গাড়িটি সফলভাবে যুক্ত হয়েছে" });
+        }
+    } catch (error) {
+        console.error("Error adding lory:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+// ৪. নির্দিষ্ট গাড়ি ডিলিট করার API (Imam)
+app.delete('/delete-lory/:number', async (req, res) => {
+    try {
+        const loryNumber = req.params.number;
+        console.log("Attempting to delete lory:", loryNumber); // এটি দিয়ে চেক করুন সার্ভারে রিকোয়েস্ট আসছে কি না
+
+        const query = { loryNumber: loryNumber };
+        const result = await loryDetailsCollection.deleteOne(query);
+        
+        if (result.deletedCount === 1) {
+            res.send({ success: true, message: "গাড়িটি সফলভাবে ডিলিট হয়েছে" });
+        } else {
+            console.log("No document found with number:", loryNumber);
+            res.status(404).send({ success: false, message: "গাড়িটি ডাটাবেজে পাওয়া যায়নি" });
+        }
+    } catch (error) {
+        console.error("Lory Delete Error:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+
+
+
+
+
+            app.get('/all-lories-imam', async (req, res) => {
+    try {
+        // শুধু loryNumber ফিল্ডটি প্রোজেকশন করে নিয়ে আসা হচ্ছে
+        const result = await loryDetailsImamCollection.find({}, { projection: { loryNumber: 1, _id: 0 } }).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error("Error fetching lories:", error);
+        res.status(500).send({ message: "গাড়ির তালিকা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+// --- ২. নতুন গাড়ি যুক্ত করার API (Diba) ---
+app.post('/add-lory-imam', async (req, res) => {
+    try {
+        const { loryNumber } = req.body;
+        
+        if (!loryNumber) {
+            return res.status(400).send({ success: false, message: "গাড়ির নম্বর প্রয়োজন" });
+        }
+
+        // চেক করা হচ্ছে গাড়িটি আগে থেকেই আছে কিনা
+        const exists = await loryDetailsImamCollection.findOne({ loryNumber });
+        if (exists) {
+            return res.status(400).send({ success: false, message: "এই গাড়িটি আগেই যুক্ত করা হয়েছে" });
+        }
+
+        const newLory = {
+            loryNumber,
+            taxToken: '',
+            fitness: '',
+            routePermit: '',
+            registration: '',
+            calibration: '',
+            exclusive: '',
+            createdAt: new Date()
+        };
+
+        const result = await loryDetailsImamCollection.insertOne(newLory);
+        if (result.insertedId) {
+            res.send({ success: true, message: "গাড়িটি সফলভাবে যুক্ত হয়েছে" });
+        }
+    } catch (error) {
+        console.error("Error adding lory:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+// ৪. নির্দিষ্ট গাড়ি ডিলিট করার API (Imam)
+app.delete('/delete-lory-imam/:number', async (req, res) => {
+    try {
+        const loryNumber = req.params.number;
+        const query = { loryNumber: loryNumber };
+        
+        const result = await loryDetailsImamCollection.deleteOne(query);
+        
+        if (result.deletedCount === 1) {
+            res.send({ success: true, message: "গাড়িটি সফলভাবে ডিলিট হয়েছে" });
+        } else {
+            res.status(404).send({ success: false, message: "গাড়িটি পাওয়া যায়নি" });
+        }
+    } catch (error) {
+        console.error("Lory Delete Error:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+        app.get('/all-lories-sahena', async (req, res) => {
+    try {
+        // শুধু loryNumber ফিল্ডটি প্রোজেকশন করে নিয়ে আসা হচ্ছে
+        const result = await loryDetailsSahenaCollection.find({}, { projection: { loryNumber: 1, _id: 0 } }).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error("Error fetching lories:", error);
+        res.status(500).send({ message: "গাড়ির তালিকা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+// --- ২. নতুন গাড়ি যুক্ত করার API (Diba) ---
+app.post('/add-lory-sahena', async (req, res) => {
+    try {
+        const { loryNumber } = req.body;
+        
+        if (!loryNumber) {
+            return res.status(400).send({ success: false, message: "গাড়ির নম্বর প্রয়োজন" });
+        }
+
+        // চেক করা হচ্ছে গাড়িটি আগে থেকেই আছে কিনা
+        const exists = await loryDetailsSahenaCollection.findOne({ loryNumber });
+        if (exists) {
+            return res.status(400).send({ success: false, message: "এই গাড়িটি আগেই যুক্ত করা হয়েছে" });
+        }
+
+        const newLory = {
+            loryNumber,
+            taxToken: '',
+            fitness: '',
+            routePermit: '',
+            registration: '',
+            calibration: '',
+            exclusive: '',
+            createdAt: new Date()
+        };
+
+        const result = await loryDetailsSahenaCollection.insertOne(newLory);
+        if (result.insertedId) {
+            res.send({ success: true, message: "গাড়িটি সফলভাবে যুক্ত হয়েছে" });
+        }
+    } catch (error) {
+        console.error("Error adding lory:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+// ৪. নির্দিষ্ট গাড়ি ডিলিট করার API (Diba)
+app.delete('/delete-lory-sahena/:number', async (req, res) => {
+    try {
+        const loryNumber = req.params.number;
+        const query = { loryNumber: loryNumber };
+        
+        const result = await loryDetailsSahenaCollection.deleteOne(query);
+        
+        if (result.deletedCount === 1) {
+            res.send({ success: true, message: "গাড়িটি সফলভাবে ডিলিট হয়েছে" });
+        } else {
+            res.status(404).send({ success: false, message: "গাড়িটি পাওয়া যায়নি" });
+        }
+    } catch (error) {
+        console.error("Lory Delete Error:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+
+
 
 
 
