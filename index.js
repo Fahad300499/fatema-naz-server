@@ -87,7 +87,7 @@ async function run() {
     }
 });
 
-// ২. রোল পরিবর্তন করার API (টোকেন ভেরিফিকেশন সরানো হয়েছে)
+// ২. রোল পরিবর্তন করার API 
 app.put('/users/role/:id', async (req, res) => {
     try {
         const id = req.params.id;
@@ -101,7 +101,7 @@ app.put('/users/role/:id', async (req, res) => {
     }
 });
 
-// ৩. ইউজার ডিলিট করার API (টোকেন ভেরিফিকেশন সরানো হয়েছে)
+// ৩. ইউজার ডিলিট করার API 
 app.delete('/users/:id', async (req, res) => {
     try {
         const id = req.params.id;
