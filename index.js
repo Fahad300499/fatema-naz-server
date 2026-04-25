@@ -78,6 +78,46 @@ async function run() {
 
 
 
+        app.get('/users', async (req, res) => {
+    try {
+        const result = await usersFatemaCollection.find().toArray();
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "ইউজার তালিকা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+// ২. রোল পরিবর্তন করার API (টোকেন ভেরিফিকেশন সরানো হয়েছে)
+app.put('/users/role/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { role } = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = { $set: { role: role } };
+        const result = await usersFatemaCollection.updateOne(filter, updateDoc);
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "রোল পরিবর্তন করা সম্ভব হয়নি" });
+    }
+});
+
+// ৩. ইউজার ডিলিট করার API (টোকেন ভেরিফিকেশন সরানো হয়েছে)
+app.delete('/users/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await usersFatemaCollection.deleteOne(query);
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "ইউজার ডিলিট করা সম্ভব হয়নি" });
+    }
+});
+
+
+
+
+
+
              app.get('/all-lories', async (req, res) => {
     try {
         // শুধু loryNumber ফিল্ডটি প্রোজেকশন করে নিয়ে আসা হচ্ছে
