@@ -5,6 +5,7 @@ const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cron = require('node-cron');
 const axios = require('axios');
+require('dotenv').config();
 
 
 app.use(cors({
@@ -32,7 +33,7 @@ app.use((req, res, next) => {
     next();
 });
 
-const uri = "mongodb+srv://petroliumDb:FlBgQ7b2SaAmBZtv@cluster0.co3ydzz.mongodb.net/petroliumDB?retryWrites=true&w=majority";
+const uri = process.env.MONGODB_URI;
 // const uri = "mongodb+srv://fatemaimamDB:1VU433bh8NCG8Vro@cluster0.co3ydzz.mongodb.net/?appName=Cluster0";
 
 
@@ -1117,20 +1118,43 @@ app.get('/all-lory-works-diba', async (req, res) => {
 
 
         // ২. তারিখ বা গাড়ী নং দিয়ে ডাটা ফিল্টার করার জন্য GET APInpde
-        app.get('/trips', async (req, res) => {
-            const { date, lorryNo } = req.query;
-            let query = {};
 
-            if (date) query.date = date;
-            // যদি নেস্টেড রো-এর ভেতর গাড়ী নং খুঁজতে চান:
-            if (lorryNo) query["rows.lorryNo"] = lorryNo;
+app.get('/trips', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = {};
 
-            const result = await tripsFatemaCollection.find(query).toArray();
-            res.send(result);
-        });
+        // তারিখ ফিল্টার লজিক
+        if (startDate && endDate) {
+            query.date = { 
+                $gte: startDate, 
+                $lte: endDate 
+            };
+        } else if (startDate) {
+            query.date = startDate;
+        }
+
+        // ভুল সংশোধন: অবশ্যই .toArray() যোগ করতে হবে
+        const trips = await tripsFatemaCollection
+            .find(query)
+            .sort({ date: -1 })
+            .toArray(); 
+        
+        console.log(`Found ${trips.length} trips for query:`, query); // ডিবাগিং এর জন্য
+        res.status(200).json(trips);
+    } catch (error) {
+        console.error("Backend Error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
 
 
 
+
+
+
+
+        
 
 
         // ২. তারিখ বা গাড়ী নং দিয়ে ডাটা ফিল্টার করার জন্য GET APInpde Imam Hossen 
