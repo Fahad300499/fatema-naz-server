@@ -1499,6 +1499,120 @@ app.get('/trips', async (req, res) => {
 
 
 
+        // ৩. রিপোর্ট জেনারেট করার জন্য সব ডাটা বা ডেট রেঞ্জ অনুযায়ী ডাটা আনার API
+app.get('/chalans-report', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = {};
+
+        // যদি startDate এবং endDate থাকে তবে নির্দিষ্ট তারিখের মধ্যে ডাটা খুঁজবে
+        if (startDate && endDate) {
+            query = {
+                date: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
+            };
+        }
+        // এখানে আপনি কোন কালেকশন থেকে রিপোর্ট দেখাতে চান সেটা সিলেক্ট করুন
+        // উদাহরণ হিসেবে chalansFatemaCollection ব্যবহার করা হয়েছে
+        const result = await chalansFatemaCollection.find(query).sort({ date: -1 }).toArray();
+        
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "রিপোর্ট ডাটা আনতে সমস্যা হয়েছে", error });
+    }
+});
+
+
+
+
+
+
+
+app.get('/chalans-report-diba', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = {};
+
+        // যদি startDate এবং endDate থাকে তবে নির্দিষ্ট তারিখের মধ্যে ডাটা খুঁজবে
+        if (startDate && endDate) {
+            query = {
+                date: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
+            };
+        }
+        // এখানে আপনি কোন কালেকশন থেকে রিপোর্ট দেখাতে চান সেটা সিলেক্ট করুন
+        // উদাহরণ হিসেবে chalansFatemaCollection ব্যবহার করা হয়েছে
+        const result = await chalansDibaCollection.find(query).sort({ date: -1 }).toArray();
+        
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "রিপোর্ট ডাটা আনতে সমস্যা হয়েছে", error });
+    }
+});
+
+
+
+
+
+
+app.get('/chalans-report-imam', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = {};
+
+        // যদি startDate এবং endDate থাকে তবে নির্দিষ্ট তারিখের মধ্যে ডাটা খুঁজবে
+        if (startDate && endDate) {
+            query = {
+                date: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
+            };
+        }
+        // এখানে আপনি কোন কালেকশন থেকে রিপোর্ট দেখাতে চান সেটা সিলেক্ট করুন
+        // উদাহরণ হিসেবে chalansFatemaCollection ব্যবহার করা হয়েছে
+        const result = await chalansImamCollection.find(query).sort({ date: -1 }).toArray();
+        
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "রিপোর্ট ডাটা আনতে সমস্যা হয়েছে", error });
+    }
+});
+
+
+
+
+
+app.get('/chalans-report-sahena', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = {};
+
+        // যদি startDate এবং endDate থাকে তবে নির্দিষ্ট তারিখের মধ্যে ডাটা খুঁজবে
+        if (startDate && endDate) {
+            query = {
+                date: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
+            };
+        }
+        // এখানে আপনি কোন কালেকশন থেকে রিপোর্ট দেখাতে চান সেটা সিলেক্ট করুন
+        // উদাহরণ হিসেবে chalansFatemaCollection ব্যবহার করা হয়েছে
+        const result = await chalansSahenaCollection.find(query).sort({ date: -1 }).toArray();
+        
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({ message: "রিপোর্ট ডাটা আনতে সমস্যা হয়েছে", error });
+    }
+});
+
+
+
 
 
         // Ping Check
