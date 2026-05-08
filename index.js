@@ -63,6 +63,13 @@ async function run() {
         const chalansImamCollection = petroliumDB.collection("chalansImam");
         const chalansSahenaCollection = petroliumDB.collection("chalansSahena");
         const chalansDibaCollection = petroliumDB.collection("chalansDiba");
+
+        const shortsFatemaCollection = petroliumDB.collection("shorts");
+        const shortsImamCollection = petroliumDB.collection("shortsImam");
+        const shortsSahenaCollection = petroliumDB.collection("shortsSahena");
+        const shortsDibaCollection = petroliumDB.collection("shortsDiba");
+
+
         const loryWorkFatemaCollection = petroliumDB.collection("loryWork");
         const loryWorkImamCollection = petroliumDB.collection("loryWorkImam");
         const loryWorkSahenaCollection = petroliumDB.collection("loryWorkSahena");
@@ -1610,6 +1617,224 @@ app.get('/chalans-report-sahena', async (req, res) => {
         res.status(500).send({ message: "রিপোর্ট ডাটা আনতে সমস্যা হয়েছে", error });
     }
 });
+
+
+
+
+
+
+
+
+    // Short Calculations সেভ করার API Fatema Naz 
+app.post('/save-short-calculations', async (req, res) => {
+    try {
+        const data = req.body;
+        // আপনি চাইলে এটি tripsDibaCollection বা নতুন কোনো কালেকশনে সেভ করতে পারেন
+        // এখানে আমি উদাহরণ হিসেবে chalansDibaCollection ব্যবহার করছি, 
+        // আপনি চাইলে নতুন কালেকশন 'shortCalculations' ও তৈরি করতে পারেন।
+        const result = await shortsFatemaCollection.insertOne(data);
+        
+        res.status(201).send({ 
+            success: true, 
+            message: "Short Calculation সফলভাবে সেভ হয়েছে", 
+            insertedId: result.insertedId 
+        });
+    } catch (error) {
+        console.error("Error saving short calculation:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+// শর্ট ক্যালকুলেশন হিস্ট্রি পাওয়ার জন্য API
+app.get('/short-calculations', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = { type: "short-calculation" }; // শুধুমাত্র শর্ট ক্যালকুলেশন ডাটা ফিল্টার করতে
+
+        // তারিখ অনুযায়ী ফিল্টার করার লজিক
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate), // শুরুর তারিখ থেকে বড় বা সমান
+                $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) // শেষ তারিখের শেষ মুহূর্ত পর্যন্ত
+            };
+        }
+
+        // ডাটাবেস থেকে লেটেস্ট ডাটা আগে আসবে (sort by createdAt: -1)
+        const result = await shortsFatemaCollection.find(query).sort({ createdAt: -1 }).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error("Error fetching short history:", error);
+        res.status(500).send({ message: "সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+
+
+
+
+
+    // Short Calculations সেভ করার API Imam Hossain 
+app.post('/save-short-calculations-imam', async (req, res) => {
+    try {
+        const data = req.body;
+        // আপনি চাইলে এটি tripsDibaCollection বা নতুন কোনো কালেকশনে সেভ করতে পারেন
+        // এখানে আমি উদাহরণ হিসেবে chalansDibaCollection ব্যবহার করছি, 
+        // আপনি চাইলে নতুন কালেকশন 'shortCalculations' ও তৈরি করতে পারেন।
+        const result = await shortsImamCollection.insertOne(data);
+        
+        res.status(201).send({ 
+            success: true, 
+            message: "Short Calculation সফলভাবে সেভ হয়েছে", 
+            insertedId: result.insertedId 
+        });
+    } catch (error) {
+        console.error("Error saving short calculation:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+// শর্ট ক্যালকুলেশন হিস্ট্রি পাওয়ার জন্য API
+app.get('/short-calculations-imam', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = { type: "short-calculation" }; // শুধুমাত্র শর্ট ক্যালকুলেশন ডাটা ফিল্টার করতে
+
+        // তারিখ অনুযায়ী ফিল্টার করার লজিক
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate), // শুরুর তারিখ থেকে বড় বা সমান
+                $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) // শেষ তারিখের শেষ মুহূর্ত পর্যন্ত
+            };
+        }
+
+        // ডাটাবেস থেকে লেটেস্ট ডাটা আগে আসবে (sort by createdAt: -1)
+        const result = await shortsImamCollection.find(query).sort({ createdAt: -1 }).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error("Error fetching short history:", error);
+        res.status(500).send({ message: "সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+
+
+
+
+
+    // Short Calculations সেভ করার API sahena enterprise 
+app.post('/save-short-calculations-sahena', async (req, res) => {
+    try {
+        const data = req.body;
+        // আপনি চাইলে এটি tripsDibaCollection বা নতুন কোনো কালেকশনে সেভ করতে পারেন
+        // এখানে আমি উদাহরণ হিসেবে chalansDibaCollection ব্যবহার করছি, 
+        // আপনি চাইলে নতুন কালেকশন 'shortCalculations' ও তৈরি করতে পারেন।
+        const result = await shortsSahenaCollection.insertOne(data);
+        
+        res.status(201).send({ 
+            success: true, 
+            message: "Short Calculation সফলভাবে সেভ হয়েছে", 
+            insertedId: result.insertedId 
+        });
+    } catch (error) {
+        console.error("Error saving short calculation:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+// শর্ট ক্যালকুলেশন হিস্ট্রি পাওয়ার জন্য API sahena enterprise 
+app.get('/short-calculations-sahena', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = { type: "short-calculation" }; // শুধুমাত্র শর্ট ক্যালকুলেশন ডাটা ফিল্টার করতে
+
+        // তারিখ অনুযায়ী ফিল্টার করার লজিক
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate), // শুরুর তারিখ থেকে বড় বা সমান
+                $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) // শেষ তারিখের শেষ মুহূর্ত পর্যন্ত
+            };
+        }
+
+        // ডাটাবেস থেকে লেটেস্ট ডাটা আগে আসবে (sort by createdAt: -1)
+        const result = await shortsSahenaCollection.find(query).sort({ createdAt: -1 }).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error("Error fetching short history:", error);
+        res.status(500).send({ message: "সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+
+
+
+
+ // Short Calculations সেভ করার API Diba ratri
+app.post('/save-short-calculations-diba', async (req, res) => {
+    try {
+        const data = req.body;
+        // আপনি চাইলে এটি tripsDibaCollection বা নতুন কোনো কালেকশনে সেভ করতে পারেন
+        // এখানে আমি উদাহরণ হিসেবে chalansDibaCollection ব্যবহার করছি, 
+        // আপনি চাইলে নতুন কালেকশন 'shortCalculations' ও তৈরি করতে পারেন।
+        const result = await shortsDibaCollection.insertOne(data);
+        
+        res.status(201).send({ 
+            success: true, 
+            message: "Short Calculation সফলভাবে সেভ হয়েছে", 
+            insertedId: result.insertedId 
+        });
+    } catch (error) {
+        console.error("Error saving short calculation:", error);
+        res.status(500).send({ success: false, message: "সার্ভারে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+// শর্ট ক্যালকুলেশন হিস্ট্রি পাওয়ার জন্য API Diba ratri
+app.get('/short-calculations-diba', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = { type: "short-calculation" }; // শুধুমাত্র শর্ট ক্যালকুলেশন ডাটা ফিল্টার করতে
+
+        // তারিখ অনুযায়ী ফিল্টার করার লজিক
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate), // শুরুর তারিখ থেকে বড় বা সমান
+                $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) // শেষ তারিখের শেষ মুহূর্ত পর্যন্ত
+            };
+        }
+
+        // ডাটাবেস থেকে লেটেস্ট ডাটা আগে আসবে (sort by createdAt: -1)
+        const result = await shortsDibaCollection.find(query).sort({ createdAt: -1 }).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error("Error fetching short history:", error);
+        res.status(500).send({ message: "সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+
+
+
+
 
 
 
