@@ -1160,22 +1160,197 @@ app.get('/trips', async (req, res) => {
 
 
 
+const { ObjectId } = require('mongodb'); // যদি অলরেডি ইম্পোর্ট করা না থাকে
+
+
+
+app.delete('/trips/:tripId/row/:rowId', async (req, res) => {
+    try {
+        const { tripId, rowId } = req.params;
+        let updateQuery = {};
+
+        // যদি ফ্রন্টএন্ড থেকে আইডি না পেয়ে ইনডেক্স (যেমন: idx-0) পাঠানো হয়
+        if (rowId.startsWith('idx-')) {
+            const rowIndex = parseInt(rowId.split('-')[1], 10);
+            
+            // নির্দিষ্ট ইনডেক্সের উপাদানটি বাদ দিতে প্রথমে সেট এবং তারপর পুল করতে হয়
+            // অথবা পজিশনাল ডিলিটের জন্য নিচের কুয়েরি সবচেয়ে নিরাপদ ও সহজ:
+            updateQuery = { 
+                $unset: { [`rows.${rowIndex}`]: 1 } 
+            };
+            
+            // প্রথমে ঐ ইনডেক্সটিকে null করে দেওয়া
+            await tripsFatemaCollection.updateOne(
+                { _id: new ObjectId(tripId) }, 
+                updateQuery
+            );
+
+            // এরপর null উপাদানটিকে অ্যারে থেকে পুরোপুরি pull (রিমুভ) করে দেওয়া
+            const result = await tripsFatemaCollection.updateOne(
+                { _id: new ObjectId(tripId) },
+                { $pull: { rows: null } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(404).json({ message: "ইনডেক্স অনুযায়ী রো ডিলিট করা যায়নি।" });
+            }
+
+            return res.status(200).json({ success: true, message: "ইনডেক্স অনুযায়ী সফলভাবে ডিলিট করা হয়েছে।" });
+        } 
+        
+        // আর যদি রিয়েল আইডি থাকে (MongoDB ObjectId অথবা নিজস্ব স্ট্রিং আইডি)
+        else {
+            let matchId;
+            try {
+                // প্রথমে চেষ্টা করব আইডিটিকে ObjectId-তে রূপান্তর করতে
+                matchId = new ObjectId(rowId);
+            } catch (e) {
+                // যদি আইডিটি কাস্টম স্ট্রিং আইডি হয়, তবে স্ট্রিং হিসেবেই থাকবে
+                matchId = rowId;
+            }
+
+            const result = await tripsFatemaCollection.updateOne(
+                { _id: new ObjectId(tripId) }, 
+                { $pull: { rows: { _id: matchId } } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(404).json({ message: "আইডি খুঁজে পাওয়া যায়নি বা অলরেডি ডিলিট হয়েছে।" });
+            }
+
+            return res.status(200).json({ success: true, message: "আইডি অনুযায়ী সফলভাবে ডিলিট করা হয়েছে।" });
+        }
+
+    } catch (error) {
+        console.error("Delete Error:", error);
+        res.status(500).json({ message: "সার্ভারে সমস্যা হয়েছে।" });
+    }
+});
+
+
+
+
+
+
+
+
 
         
 
 
         // ২. তারিখ বা গাড়ী নং দিয়ে ডাটা ফিল্টার করার জন্য GET APInpde Imam Hossen 
-        app.get('/trips-imam', async (req, res) => {
-            const { date, lorryNo } = req.query;
-            let query = {};
+       app.get('/trips-imam', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = {};
 
-            if (date) query.date = date;
-            // যদি নেস্টেড রো-এর ভেতর গাড়ী নং খুঁজতে চান:
-            if (lorryNo) query["rows.lorryNo"] = lorryNo;
+        // তারিখ ফিল্টার লজিক
+        if (startDate && endDate) {
+            query.date = { 
+                $gte: startDate, 
+                $lte: endDate 
+            };
+        } else if (startDate) {
+            query.date = startDate;
+        }
 
-            const result = await tripsImamCollection.find(query).toArray();
-            res.send(result);
-        });
+        // ভুল সংশোধন: অবশ্যই .toArray() যোগ করতে হবে
+        const trips = await tripsImamCollection
+            .find(query)
+            .sort({ date: -1 })
+            .toArray(); 
+        
+        console.log(`Found ${trips.length} trips for query:`, query); // ডিবাগিং এর জন্য
+        res.status(200).json(trips);
+    } catch (error) {
+        console.error("Backend Error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
+
+
+
+
+        app.delete('/trips-imam/:tripId/row/:rowId', async (req, res) => {
+    try {
+        const { tripId, rowId } = req.params;
+        let updateQuery = {};
+
+        // যদি ফ্রন্টএন্ড থেকে আইডি না পেয়ে ইনডেক্স (যেমন: idx-0) পাঠানো হয়
+        if (rowId.startsWith('idx-')) {
+            const rowIndex = parseInt(rowId.split('-')[1], 10);
+            
+            // নির্দিষ্ট ইনডেক্সের উপাদানটি বাদ দিতে প্রথমে সেট এবং তারপর পুল করতে হয়
+            // অথবা পজিশনাল ডিলিটের জন্য নিচের কুয়েরি সবচেয়ে নিরাপদ ও সহজ:
+            updateQuery = { 
+                $unset: { [`rows.${rowIndex}`]: 1 } 
+            };
+            
+            // প্রথমে ঐ ইনডেক্সটিকে null করে দেওয়া
+            await tripsImamCollection.updateOne(
+                { _id: new ObjectId(tripId) }, 
+                updateQuery
+            );
+
+            // এরপর null উপাদানটিকে অ্যারে থেকে পুরোপুরি pull (রিমুভ) করে দেওয়া
+            const result = await tripsImamCollection.updateOne(
+                { _id: new ObjectId(tripId) },
+                { $pull: { rows: null } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(404).json({ message: "ইনডেক্স অনুযায়ী রো ডিলিট করা যায়নি।" });
+            }
+
+            return res.status(200).json({ success: true, message: "ইনডেক্স অনুযায়ী সফলভাবে ডিলিট করা হয়েছে।" });
+        } 
+        
+        // আর যদি রিয়েল আইডি থাকে (MongoDB ObjectId অথবা নিজস্ব স্ট্রিং আইডি)
+        else {
+            let matchId;
+            try {
+                // প্রথমে চেষ্টা করব আইডিটিকে ObjectId-তে রূপান্তর করতে
+                matchId = new ObjectId(rowId);
+            } catch (e) {
+                // যদি আইডিটি কাস্টম স্ট্রিং আইডি হয়, তবে স্ট্রিং হিসেবেই থাকবে
+                matchId = rowId;
+            }
+
+            const result = await tripsImamCollection.updateOne(
+                { _id: new ObjectId(tripId) }, 
+                { $pull: { rows: { _id: matchId } } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(404).json({ message: "আইডি খুঁজে পাওয়া যায়নি বা অলরেডি ডিলিট হয়েছে।" });
+            }
+
+            return res.status(200).json({ success: true, message: "আইডি অনুযায়ী সফলভাবে ডিলিট করা হয়েছে।" });
+        }
+
+    } catch (error) {
+        console.error("Delete Error:", error);
+        res.status(500).json({ message: "সার্ভারে সমস্যা হয়েছে।" });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1183,34 +1358,231 @@ app.get('/trips', async (req, res) => {
 
 
           // ২. তারিখ বা গাড়ী নং দিয়ে ডাটা ফিল্টার করার জন্য GET APInpde
-        app.get('/trips-sahena', async (req, res) => {
-            const { date, lorryNo } = req.query;
-            let query = {};
+          app.get('/trips-sahena', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = {};
 
-            if (date) query.date = date;
-            // যদি নেস্টেড রো-এর ভেতর গাড়ী নং খুঁজতে চান:
-            if (lorryNo) query["rows.lorryNo"] = lorryNo;
+        // তারিখ ফিল্টার লজিক
+        if (startDate && endDate) {
+            query.date = { 
+                $gte: startDate, 
+                $lte: endDate 
+            };
+        } else if (startDate) {
+            query.date = startDate;
+        }
 
-            const result = await tripsSahenaCollection.find(query).toArray();
-            res.send(result);
-        });
+        // ভুল সংশোধন: অবশ্যই .toArray() যোগ করতে হবে
+        const trips = await tripsSahenaCollection
+            .find(query)
+            .sort({ date: -1 })
+            .toArray(); 
+        
+        console.log(`Found ${trips.length} trips for query:`, query); // ডিবাগিং এর জন্য
+        res.status(200).json(trips);
+    } catch (error) {
+        console.error("Backend Error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
+
+
+
+
+
+        app.delete('/trips-sahena/:tripId/row/:rowId', async (req, res) => {
+    try {
+        const { tripId, rowId } = req.params;
+        let updateQuery = {};
+
+        // যদি ফ্রন্টএন্ড থেকে আইডি না পেয়ে ইনডেক্স (যেমন: idx-0) পাঠানো হয়
+        if (rowId.startsWith('idx-')) {
+            const rowIndex = parseInt(rowId.split('-')[1], 10);
+            
+            // নির্দিষ্ট ইনডেক্সের উপাদানটি বাদ দিতে প্রথমে সেট এবং তারপর পুল করতে হয়
+            // অথবা পজিশনাল ডিলিটের জন্য নিচের কুয়েরি সবচেয়ে নিরাপদ ও সহজ:
+            updateQuery = { 
+                $unset: { [`rows.${rowIndex}`]: 1 } 
+            };
+            
+            // প্রথমে ঐ ইনডেক্সটিকে null করে দেওয়া
+            await tripsSahenaCollection.updateOne(
+                { _id: new ObjectId(tripId) }, 
+                updateQuery
+            );
+
+            // এরপর null উপাদানটিকে অ্যারে থেকে পুরোপুরি pull (রিমুভ) করে দেওয়া
+            const result = await tripsSahenaCollection.updateOne(
+                { _id: new ObjectId(tripId) },
+                { $pull: { rows: null } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(404).json({ message: "ইনডেক্স অনুযায়ী রো ডিলিট করা যায়নি।" });
+            }
+
+            return res.status(200).json({ success: true, message: "ইনডেক্স অনুযায়ী সফলভাবে ডিলিট করা হয়েছে।" });
+        } 
+        
+        // আর যদি রিয়েল আইডি থাকে (MongoDB ObjectId অথবা নিজস্ব স্ট্রিং আইডি)
+        else {
+            let matchId;
+            try {
+                // প্রথমে চেষ্টা করব আইডিটিকে ObjectId-তে রূপান্তর করতে
+                matchId = new ObjectId(rowId);
+            } catch (e) {
+                // যদি আইডিটি কাস্টম স্ট্রিং আইডি হয়, তবে স্ট্রিং হিসেবেই থাকবে
+                matchId = rowId;
+            }
+
+            const result = await tripsSahenaCollection.updateOne(
+                { _id: new ObjectId(tripId) }, 
+                { $pull: { rows: { _id: matchId } } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(404).json({ message: "আইডি খুঁজে পাওয়া যায়নি বা অলরেডি ডিলিট হয়েছে।" });
+            }
+
+            return res.status(200).json({ success: true, message: "আইডি অনুযায়ী সফলভাবে ডিলিট করা হয়েছে।" });
+        }
+
+    } catch (error) {
+        console.error("Delete Error:", error);
+        res.status(500).json({ message: "সার্ভারে সমস্যা হয়েছে।" });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
         
           // ২. তারিখ বা গাড়ী নং দিয়ে ডাটা ফিল্টার করার জন্য GET APInpde
-        app.get('/trips-diba', async (req, res) => {
-            const { date, lorryNo } = req.query;
-            let query = {};
+           app.get('/trips-diba', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let query = {};
 
-            if (date) query.date = date;
-            // যদি নেস্টেড রো-এর ভেতর গাড়ী নং খুঁজতে চান:
-            if (lorryNo) query["rows.lorryNo"] = lorryNo;
+        // তারিখ ফিল্টার লজিক
+        if (startDate && endDate) {
+            query.date = { 
+                $gte: startDate, 
+                $lte: endDate 
+            };
+        } else if (startDate) {
+            query.date = startDate;
+        }
 
-            const result = await tripsDibaCollection.find(query).toArray();
-            res.send(result);
-        });
+        // ভুল সংশোধন: অবশ্যই .toArray() যোগ করতে হবে
+        const trips = await tripsDibaCollection
+            .find(query)
+            .sort({ date: -1 })
+            .toArray(); 
+        
+        console.log(`Found ${trips.length} trips for query:`, query); // ডিবাগিং এর জন্য
+        res.status(200).json(trips);
+    } catch (error) {
+        console.error("Backend Error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
+
+
+
+
+        app.delete('/trips-diba/:tripId/row/:rowId', async (req, res) => {
+    try {
+        const { tripId, rowId } = req.params;
+        let updateQuery = {};
+
+        // যদি ফ্রন্টএন্ড থেকে আইডি না পেয়ে ইনডেক্স (যেমন: idx-0) পাঠানো হয়
+        if (rowId.startsWith('idx-')) {
+            const rowIndex = parseInt(rowId.split('-')[1], 10);
+            
+            // নির্দিষ্ট ইনডেক্সের উপাদানটি বাদ দিতে প্রথমে সেট এবং তারপর পুল করতে হয়
+            // অথবা পজিশনাল ডিলিটের জন্য নিচের কুয়েরি সবচেয়ে নিরাপদ ও সহজ:
+            updateQuery = { 
+                $unset: { [`rows.${rowIndex}`]: 1 } 
+            };
+            
+            // প্রথমে ঐ ইনডেক্সটিকে null করে দেওয়া
+            await tripsDibaCollection.updateOne(
+                { _id: new ObjectId(tripId) }, 
+                updateQuery
+            );
+
+            // এরপর null উপাদানটিকে অ্যারে থেকে পুরোপুরি pull (রিমুভ) করে দেওয়া
+            const result = await tripsDibaCollection.updateOne(
+                { _id: new ObjectId(tripId) },
+                { $pull: { rows: null } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(404).json({ message: "ইনডেক্স অনুযায়ী রো ডিলিট করা যায়নি।" });
+            }
+
+            return res.status(200).json({ success: true, message: "ইনডেক্স অনুযায়ী সফলভাবে ডিলিট করা হয়েছে।" });
+        } 
+        
+        // আর যদি রিয়েল আইডি থাকে (MongoDB ObjectId অথবা নিজস্ব স্ট্রিং আইডি)
+        else {
+            let matchId;
+            try {
+                // প্রথমে চেষ্টা করব আইডিটিকে ObjectId-তে রূপান্তর করতে
+                matchId = new ObjectId(rowId);
+            } catch (e) {
+                // যদি আইডিটি কাস্টম স্ট্রিং আইডি হয়, তবে স্ট্রিং হিসেবেই থাকবে
+                matchId = rowId;
+            }
+
+            const result = await tripsDibaCollection.updateOne(
+                { _id: new ObjectId(tripId) }, 
+                { $pull: { rows: { _id: matchId } } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(404).json({ message: "আইডি খুঁজে পাওয়া যায়নি বা অলরেডি ডিলিট হয়েছে।" });
+            }
+
+            return res.status(200).json({ success: true, message: "আইডি অনুযায়ী সফলভাবে ডিলিট করা হয়েছে।" });
+        }
+
+    } catch (error) {
+        console.error("Delete Error:", error);
+        res.status(500).json({ message: "সার্ভারে সমস্যা হয়েছে।" });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1534,6 +1906,59 @@ app.get('/chalans-report', async (req, res) => {
 
 
 
+app.delete('/delete-chalan/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { ObjectId } = require('mongodb'); 
+        
+        let targetId;
+        try {
+            // আইডিটিকে ObjectId তে রূপান্তর করার চেষ্টা
+            targetId = new ObjectId(id);
+        } catch (e) {
+            // যদি সাধারণ স্ট্রিং বা কাস্টম আইডি হয়
+            targetId = id;
+        }
+
+        // ভুল সংশোধন: $pull এর ভেতরের স্ট্রাকচারটি মঙ্গোডিবির নিয়ম অনুযায়ী সহজ করা হলো
+        const result = await chalansFatemaCollection.updateOne(
+            { 
+                $or: [
+                    { "entries._id": targetId },
+                    { "entries.id": targetId }
+                ]
+            }, 
+            { 
+                $pull: { 
+                    entries: {
+                        // মঙ্গোডিবির $pull অবজেক্টের ভেতর সরাসরি কন্ডিশন এভাবে লিখতে হয়
+                        $or: [
+                            { _id: targetId },
+                            { id: targetId }
+                        ]
+                    }
+                } 
+            }
+        );
+
+        // যদি কোনো ডকুমেন্ট ম্যাচ না করে অথবা মডিফাই না হয়
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "দুঃখিত, এই চালানের আইডিটি ডাটাবেজে খুঁজে পাওয়া যায়নি!" });
+        }
+
+        res.status(200).json({ message: "চালানটি সফলভাবে ডাটাবেজ থেকে মুছে ফেলা হয়েছে" });
+    } catch (error) {
+        console.error("ডাটা মুছতে সার্ভারে সমস্যা হয়েছে:", error);
+        res.status(500).json({ error: "সার্ভারে অভ্যন্তরীণ সমস্যা হয়েছে", details: error.message });
+    }
+});
+
+
+
+
+
+
+
 
 
 
@@ -1560,6 +1985,62 @@ app.get('/chalans-report-diba', async (req, res) => {
         res.status(500).send({ message: "রিপোর্ট ডাটা আনতে সমস্যা হয়েছে", error });
     }
 });
+
+
+
+app.delete('/delete-chalan-diba/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { ObjectId } = require('mongodb'); 
+        
+        let targetId;
+        try {
+            // আইডিটিকে ObjectId তে রূপান্তর করার চেষ্টা
+            targetId = new ObjectId(id);
+        } catch (e) {
+            // যদি সাধারণ স্ট্রিং বা কাস্টম আইডি হয়
+            targetId = id;
+        }
+
+        // ভুল সংশোধন: $pull এর ভেতরের স্ট্রাকচারটি মঙ্গোডিবির নিয়ম অনুযায়ী সহজ করা হলো
+        const result = await chalansDibaCollection.updateOne(
+            { 
+                $or: [
+                    { "entries._id": targetId },
+                    { "entries.id": targetId }
+                ]
+            }, 
+            { 
+                $pull: { 
+                    entries: {
+                        // মঙ্গোডিবির $pull অবজেক্টের ভেতর সরাসরি কন্ডিশন এভাবে লিখতে হয়
+                        $or: [
+                            { _id: targetId },
+                            { id: targetId }
+                        ]
+                    }
+                } 
+            }
+        );
+
+        // যদি কোনো ডকুমেন্ট ম্যাচ না করে অথবা মডিফাই না হয়
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "দুঃখিত, এই চালানের আইডিটি ডাটাবেজে খুঁজে পাওয়া যায়নি!" });
+        }
+
+        res.status(200).json({ message: "চালানটি সফলভাবে ডাটাবেজ থেকে মুছে ফেলা হয়েছে" });
+    } catch (error) {
+        console.error("ডাটা মুছতে সার্ভারে সমস্যা হয়েছে:", error);
+        res.status(500).json({ error: "সার্ভারে অভ্যন্তরীণ সমস্যা হয়েছে", details: error.message });
+    }
+});
+
+
+
+
+
+
+
 
 
 
@@ -1593,6 +2074,66 @@ app.get('/chalans-report-imam', async (req, res) => {
 
 
 
+app.delete('/delete-chalan-imam/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { ObjectId } = require('mongodb'); 
+        
+        let targetId;
+        try {
+            // আইডিটিকে ObjectId তে রূপান্তর করার চেষ্টা
+            targetId = new ObjectId(id);
+        } catch (e) {
+            // যদি সাধারণ স্ট্রিং বা কাস্টম আইডি হয়
+            targetId = id;
+        }
+
+        // ভুল সংশোধন: $pull এর ভেতরের স্ট্রাকচারটি মঙ্গোডিবির নিয়ম অনুযায়ী সহজ করা হলো
+        const result = await chalansImamCollection.updateOne(
+            { 
+                $or: [
+                    { "entries._id": targetId },
+                    { "entries.id": targetId }
+                ]
+            }, 
+            { 
+                $pull: { 
+                    entries: {
+                        // মঙ্গোডিবির $pull অবজেক্টের ভেতর সরাসরি কন্ডিশন এভাবে লিখতে হয়
+                        $or: [
+                            { _id: targetId },
+                            { id: targetId }
+                        ]
+                    }
+                } 
+            }
+        );
+
+        // যদি কোনো ডকুমেন্ট ম্যাচ না করে অথবা মডিফাই না হয়
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "দুঃখিত, এই চালানের আইডিটি ডাটাবেজে খুঁজে পাওয়া যায়নি!" });
+        }
+
+        res.status(200).json({ message: "চালানটি সফলভাবে ডাটাবেজ থেকে মুছে ফেলা হয়েছে" });
+    } catch (error) {
+        console.error("ডাটা মুছতে সার্ভারে সমস্যা হয়েছে:", error);
+        res.status(500).json({ error: "সার্ভারে অভ্যন্তরীণ সমস্যা হয়েছে", details: error.message });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 app.get('/chalans-report-sahena', async (req, res) => {
     try {
@@ -1617,6 +2158,64 @@ app.get('/chalans-report-sahena', async (req, res) => {
         res.status(500).send({ message: "রিপোর্ট ডাটা আনতে সমস্যা হয়েছে", error });
     }
 });
+
+
+
+
+app.delete('/delete-chalan-sahena/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { ObjectId } = require('mongodb'); 
+        
+        let targetId;
+        try {
+            // আইডিটিকে ObjectId তে রূপান্তর করার চেষ্টা
+            targetId = new ObjectId(id);
+        } catch (e) {
+            // যদি সাধারণ স্ট্রিং বা কাস্টম আইডি হয়
+            targetId = id;
+        }
+
+        // ভুল সংশোধন: $pull এর ভেতরের স্ট্রাকচারটি মঙ্গোডিবির নিয়ম অনুযায়ী সহজ করা হলো
+        const result = await chalansSahenaCollection.updateOne(
+            { 
+                $or: [
+                    { "entries._id": targetId },
+                    { "entries.id": targetId }
+                ]
+            }, 
+            { 
+                $pull: { 
+                    entries: {
+                        // মঙ্গোডিবির $pull অবজেক্টের ভেতর সরাসরি কন্ডিশন এভাবে লিখতে হয়
+                        $or: [
+                            { _id: targetId },
+                            { id: targetId }
+                        ]
+                    }
+                } 
+            }
+        );
+
+        // যদি কোনো ডকুমেন্ট ম্যাচ না করে অথবা মডিফাই না হয়
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "দুঃখিত, এই চালানের আইডিটি ডাটাবেজে খুঁজে পাওয়া যায়নি!" });
+        }
+
+        res.status(200).json({ message: "চালানটি সফলভাবে ডাটাবেজ থেকে মুছে ফেলা হয়েছে" });
+    } catch (error) {
+        console.error("ডাটা মুছতে সার্ভারে সমস্যা হয়েছে:", error);
+        res.status(500).json({ error: "সার্ভারে অভ্যন্তরীণ সমস্যা হয়েছে", details: error.message });
+    }
+});
+
+
+
+
+
+
+
+
 
 
 
@@ -1647,28 +2246,76 @@ app.post('/save-short-calculations', async (req, res) => {
 
 
 
+
+
+
+
+
 // শর্ট ক্যালকুলেশন হিস্ট্রি পাওয়ার জন্য API
+
 app.get('/short-calculations', async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
-        let query = { type: "short-calculation" }; // শুধুমাত্র শর্ট ক্যালকুলেশন ডাটা ফিল্টার করতে
+        // এখানে সরাসরি কোনো ডেট কোয়েরি করার প্রয়োজন নেই, 
+        // কারণ ফ্রন্টএন্ড অলরেডি `deliverDate` দিয়ে নিখুঁত ফিল্টার করছে।
+        let query = { type: "short-calculation" }; 
 
-        // তারিখ অনুযায়ী ফিল্টার করার লজিক
-        if (startDate && endDate) {
-            query.createdAt = {
-                $gte: new Date(startDate), // শুরুর তারিখ থেকে বড় বা সমান
-                $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) // শেষ তারিখের শেষ মুহূর্ত পর্যন্ত
-            };
-        }
-
-        // ডাটাবেস থেকে লেটেস্ট ডাটা আগে আসবে (sort by createdAt: -1)
+        // ডাটাবেস থেকে লেটেস্ট ডাটা আগে আসবে
         const result = await shortsFatemaCollection.find(query).sort({ createdAt: -1 }).toArray();
         res.send(result);
     } catch (error) {
         console.error("Error fetching short history:", error);
-        res.status(500).send({ message: "সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে" });
+        res.status(500).send({ message: "সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে" });
     }
 });
+
+
+
+// নির্দিষ্ট শিটের (Document) ভেতর থেকে একটি নির্দিষ্ট রো (Row) ডিলিট করার API
+app.delete('/short-calculations/:sheetId/row/:rowId', async (req, res) => {
+    try {
+        const { sheetId, rowId } = req.params;
+        const { ObjectId } = require('mongodb'); // যদি ফাইলের শুরুতে ObjectId ইমপোর্ট করা না থাকে
+
+        // ১. মেইন ডকুমেন্ট থেকে নির্দিষ্ট rowId যুক্ত অবজেক্টটি সরিয়ে (Pull) ফেলা
+        const updateResult = await shortsFatemaCollection.findOneAndUpdate(
+            { _id: new ObjectId(sheetId) },
+            { $pull: { rows: { rowId: rowId } } }, // এন্ট্রি দেওয়ার সময় 'rowId' কী (Key) ব্যবহার করা হয়েছে
+            { returnDocument: 'after' } // আপডেট হওয়ার পরের নতুন ডাটাটি রিটার্ন করবে
+        );
+
+        // ২. যদি আইডি অনুযায়ী কোনো শিট বা ডকুমেন্ট খুঁজে পাওয়া না যায়
+        // (MongoDB Native Driver-এ আপডেট করা ডাটা .value বা সরাসরি অবজেক্টে থাকে সংস্কৃতির ওপর ভিত্তি করে)
+        const updatedSheet = updateResult.value || updateResult;
+        
+        if (!updatedSheet) {
+            return res.status(404).send({ message: "শিটটি খুঁজে পাওয়া যায়নি!" });
+        }
+
+        // ৩. যদি রো ডিলিট করার পর ওই শিটের ভেতর আর কোনো রো না থাকে (খালি হয়ে যায়)
+        // তাহলে খালি শিটটি ডাটাবেজে না রেখে সম্পূর্ণ ডকুমেন্টটিই ডিলিট করে দেওয়া ভালো
+        if (!updatedSheet.rows || updatedSheet.rows.length === 0) {
+            await shortsFatemaCollection.deleteOne({ _id: new ObjectId(sheetId) });
+            return res.status(200).send({ 
+                success: true, 
+                message: "শিটের শেষ রেকর্ডটি ডিলিট হওয়ায় সম্পূর্ণ শিটটি মুছে ফেলা হয়েছে।" 
+            });
+        }
+
+        // সফলভাবে শুধুমাত্র নির্দিষ্ট রো ডিলিট হলে রেসপন্স
+        res.status(200).send({ 
+            success: true, 
+            message: "রেকর্ডটি সফলভাবে ডিলিট হয়েছে!" 
+        });
+
+    } catch (error) {
+        console.error("Error deleting short row:", error);
+        res.status(500).send({ message: "সার্ভারে সমস্যা হয়েছে, ডিলিট করা যায়নি।" });
+    }
+});
+
+
+
+
 
 
 
@@ -1700,28 +2347,96 @@ app.post('/save-short-calculations-imam', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // শর্ট ক্যালকুলেশন হিস্ট্রি পাওয়ার জন্য API
 app.get('/short-calculations-imam', async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
-        let query = { type: "short-calculation" }; // শুধুমাত্র শর্ট ক্যালকুলেশন ডাটা ফিল্টার করতে
+        // এখানে সরাসরি কোনো ডেট কোয়েরি করার প্রয়োজন নেই, 
+        // কারণ ফ্রন্টএন্ড অলরেডি `deliverDate` দিয়ে নিখুঁত ফিল্টার করছে।
+        let query = { type: "short-calculation" }; 
 
-        // তারিখ অনুযায়ী ফিল্টার করার লজিক
-        if (startDate && endDate) {
-            query.createdAt = {
-                $gte: new Date(startDate), // শুরুর তারিখ থেকে বড় বা সমান
-                $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) // শেষ তারিখের শেষ মুহূর্ত পর্যন্ত
-            };
-        }
-
-        // ডাটাবেস থেকে লেটেস্ট ডাটা আগে আসবে (sort by createdAt: -1)
+        // ডাটাবেস থেকে লেটেস্ট ডাটা আগে আসবে
         const result = await shortsImamCollection.find(query).sort({ createdAt: -1 }).toArray();
         res.send(result);
     } catch (error) {
         console.error("Error fetching short history:", error);
-        res.status(500).send({ message: "সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে" });
+        res.status(500).send({ message: "সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে" });
     }
 });
+
+
+
+
+
+// নির্দিষ্ট শিটের (Document) ভেতর থেকে একটি নির্দিষ্ট রো (Row) ডিলিট করার API
+app.delete('/short-calculations-imam/:sheetId/row/:rowId', async (req, res) => {
+    try {
+        const { sheetId, rowId } = req.params;
+        const { ObjectId } = require('mongodb'); // যদি ফাইলের শুরুতে ObjectId ইমপোর্ট করা না থাকে
+
+        // ১. মেইন ডকুমেন্ট থেকে নির্দিষ্ট rowId যুক্ত অবজেক্টটি সরিয়ে (Pull) ফেলা
+        const updateResult = await shortsImamCollection.findOneAndUpdate(
+            { _id: new ObjectId(sheetId) },
+            { $pull: { rows: { rowId: rowId } } }, // এন্ট্রি দেওয়ার সময় 'rowId' কী (Key) ব্যবহার করা হয়েছে
+            { returnDocument: 'after' } // আপডেট হওয়ার পরের নতুন ডাটাটি রিটার্ন করবে
+        );
+
+        // ২. যদি আইডি অনুযায়ী কোনো শিট বা ডকুমেন্ট খুঁজে পাওয়া না যায়
+        // (MongoDB Native Driver-এ আপডেট করা ডাটা .value বা সরাসরি অবজেক্টে থাকে সংস্কৃতির ওপর ভিত্তি করে)
+        const updatedSheet = updateResult.value || updateResult;
+        
+        if (!updatedSheet) {
+            return res.status(404).send({ message: "শিটটি খুঁজে পাওয়া যায়নি!" });
+        }
+
+        // ৩. যদি রো ডিলিট করার পর ওই শিটের ভেতর আর কোনো রো না থাকে (খালি হয়ে যায়)
+        // তাহলে খালি শিটটি ডাটাবেজে না রেখে সম্পূর্ণ ডকুমেন্টটিই ডিলিট করে দেওয়া ভালো
+        if (!updatedSheet.rows || updatedSheet.rows.length === 0) {
+            await shortsImamCollection.deleteOne({ _id: new ObjectId(sheetId) });
+            return res.status(200).send({ 
+                success: true, 
+                message: "শিটের শেষ রেকর্ডটি ডিলিট হওয়ায় সম্পূর্ণ শিটটি মুছে ফেলা হয়েছে।" 
+            });
+        }
+
+        // সফলভাবে শুধুমাত্র নির্দিষ্ট রো ডিলিট হলে রেসপন্স
+        res.status(200).send({ 
+            success: true, 
+            message: "রেকর্ডটি সফলভাবে ডিলিট হয়েছে!" 
+        });
+
+    } catch (error) {
+        console.error("Error deleting short row:", error);
+        res.status(500).send({ message: "সার্ভারে সমস্যা হয়েছে, ডিলিট করা যায়নি।" });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1779,6 +2494,52 @@ app.get('/short-calculations-sahena', async (req, res) => {
 
 
 
+// নির্দিষ্ট শিটের (Document) ভেতর থেকে একটি নির্দিষ্ট রো (Row) ডিলিট করার API
+app.delete('/short-calculations-sahena/:sheetId/row/:rowId', async (req, res) => {
+    try {
+        const { sheetId, rowId } = req.params;
+        const { ObjectId } = require('mongodb'); // যদি ফাইলের শুরুতে ObjectId ইমপোর্ট করা না থাকে
+
+        // ১. মেইন ডকুমেন্ট থেকে নির্দিষ্ট rowId যুক্ত অবজেক্টটি সরিয়ে (Pull) ফেলা
+        const updateResult = await shortsSahenaCollection.findOneAndUpdate(
+            { _id: new ObjectId(sheetId) },
+            { $pull: { rows: { rowId: rowId } } }, // এন্ট্রি দেওয়ার সময় 'rowId' কী (Key) ব্যবহার করা হয়েছে
+            { returnDocument: 'after' } // আপডেট হওয়ার পরের নতুন ডাটাটি রিটার্ন করবে
+        );
+
+        // ২. যদি আইডি অনুযায়ী কোনো শিট বা ডকুমেন্ট খুঁজে পাওয়া না যায়
+        // (MongoDB Native Driver-এ আপডেট করা ডাটা .value বা সরাসরি অবজেক্টে থাকে সংস্কৃতির ওপর ভিত্তি করে)
+        const updatedSheet = updateResult.value || updateResult;
+        
+        if (!updatedSheet) {
+            return res.status(404).send({ message: "শিটটি খুঁজে পাওয়া যায়নি!" });
+        }
+
+        // ৩. যদি রো ডিলিট করার পর ওই শিটের ভেতর আর কোনো রো না থাকে (খালি হয়ে যায়)
+        // তাহলে খালি শিটটি ডাটাবেজে না রেখে সম্পূর্ণ ডকুমেন্টটিই ডিলিট করে দেওয়া ভালো
+        if (!updatedSheet.rows || updatedSheet.rows.length === 0) {
+            await shortsSahenaCollection.deleteOne({ _id: new ObjectId(sheetId) });
+            return res.status(200).send({ 
+                success: true, 
+                message: "শিটের শেষ রেকর্ডটি ডিলিট হওয়ায় সম্পূর্ণ শিটটি মুছে ফেলা হয়েছে।" 
+            });
+        }
+
+        // সফলভাবে শুধুমাত্র নির্দিষ্ট রো ডিলিট হলে রেসপন্স
+        res.status(200).send({ 
+            success: true, 
+            message: "রেকর্ডটি সফলভাবে ডিলিট হয়েছে!" 
+        });
+
+    } catch (error) {
+        console.error("Error deleting short row:", error);
+        res.status(500).send({ message: "সার্ভারে সমস্যা হয়েছে, ডিলিট করা যায়নি।" });
+    }
+});
+
+
+
+
 
 
 
@@ -1825,6 +2586,53 @@ app.get('/short-calculations-diba', async (req, res) => {
     } catch (error) {
         console.error("Error fetching short history:", error);
         res.status(500).send({ message: "সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে" });
+    }
+});
+
+
+
+
+
+// নির্দিষ্ট শিটের (Document) ভেতর থেকে একটি নির্দিষ্ট রো (Row) ডিলিট করার API
+app.delete('/short-calculations-diba/:sheetId/row/:rowId', async (req, res) => {
+    try {
+        const { sheetId, rowId } = req.params;
+        const { ObjectId } = require('mongodb'); // যদি ফাইলের শুরুতে ObjectId ইমপোর্ট করা না থাকে
+
+        // ১. মেইন ডকুমেন্ট থেকে নির্দিষ্ট rowId যুক্ত অবজেক্টটি সরিয়ে (Pull) ফেলা
+        const updateResult = await shortsDibaCollection.findOneAndUpdate(
+            { _id: new ObjectId(sheetId) },
+            { $pull: { rows: { rowId: rowId } } }, // এন্ট্রি দেওয়ার সময় 'rowId' কী (Key) ব্যবহার করা হয়েছে
+            { returnDocument: 'after' } // আপডেট হওয়ার পরের নতুন ডাটাটি রিটার্ন করবে
+        );
+
+        // ২. যদি আইডি অনুযায়ী কোনো শিট বা ডকুমেন্ট খুঁজে পাওয়া না যায়
+        // (MongoDB Native Driver-এ আপডেট করা ডাটা .value বা সরাসরি অবজেক্টে থাকে সংস্কৃতির ওপর ভিত্তি করে)
+        const updatedSheet = updateResult.value || updateResult;
+        
+        if (!updatedSheet) {
+            return res.status(404).send({ message: "শিটটি খুঁজে পাওয়া যায়নি!" });
+        }
+
+        // ৩. যদি রো ডিলিট করার পর ওই শিটের ভেতর আর কোনো রো না থাকে (খালি হয়ে যায়)
+        // তাহলে খালি শিটটি ডাটাবেজে না রেখে সম্পূর্ণ ডকুমেন্টটিই ডিলিট করে দেওয়া ভালো
+        if (!updatedSheet.rows || updatedSheet.rows.length === 0) {
+            await shortsDibaCollection.deleteOne({ _id: new ObjectId(sheetId) });
+            return res.status(200).send({ 
+                success: true, 
+                message: "শিটের শেষ রেকর্ডটি ডিলিট হওয়ায় সম্পূর্ণ শিটটি মুছে ফেলা হয়েছে।" 
+            });
+        }
+
+        // সফলভাবে শুধুমাত্র নির্দিষ্ট রো ডিলিট হলে রেসপন্স
+        res.status(200).send({ 
+            success: true, 
+            message: "রেকর্ডটি সফলভাবে ডিলিট হয়েছে!" 
+        });
+
+    } catch (error) {
+        console.error("Error deleting short row:", error);
+        res.status(500).send({ message: "সার্ভারে সমস্যা হয়েছে, ডিলিট করা যায়নি।" });
     }
 });
 
