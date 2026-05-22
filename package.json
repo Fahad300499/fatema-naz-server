@@ -14,8 +14,8 @@
   "start": "node index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "echo 'No build step required for this server'",
-    "dev": "nodemon index.js"
+    "build": "node api.js && echo 'No build step required for this server'",
+    "dev": "node api.js && nodemon index.js"
   },
   "keywords": [],
   "author": "",
